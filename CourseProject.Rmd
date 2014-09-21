@@ -1,0 +1,167 @@
+---
+title: "Regression Models Course Project"
+author: "Huascar Duarte"
+date: "September 20th, 2014"
+output: pdf_document
+---
+
+##Executive Summary
+
+  Famous automobile magazine Motor Trend has comissioned us to explore the relationship between a set of variables and fuel consumption mesured in miles per gallon. They are particularly interested in the following two questions:
+  
+- “Is an automatic or manual transmission better for MPG?”  
+  
+- "What is the MPG difference between automatic and manual transmissions?"  
+  
+  Our study confirms that cars with manual transmission are more economical than cars with automatic transmission, but economy varies with the car's power.
+  
+
+##Data
+
+  The `mtcars` dataset provided in R's `datasets` library will be used to explore the relaitonship berween fuel consumption and other variables.
+  
+  The data in this dataset was extracted from the 1974 *Motor Trend* US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models), providing the information below, some o which we will not use in our analysis, since they are not directly related to fuel consumption:
+  
+1. **mpg** - Miles/(US) gallon
+2. cyl - Number of cylinders *(not used)*
+3. **disp** - Displacement (cu.in.), i.e., total cubic capacity of cylinders
+4. **hp** - Gross horsepower
+5. drat - Rear axle ratio *(not used)*
+6. **wt** - Weight (lb/1000)
+7. qsec - 1/4 mile time *(not used)*
+8. vs - Disposition of cylinders (V or Straight) *(not used)*
+9. **am** - Transmission (0 = automatic, 1 = manual)
+10. gear - Number of forward gears *(not used)*
+11. carb - Number of carburetors *(not used)*
+ 
+  We will use a subset of the data with the variables we are interested in the data frame `cars`.  
+```{r, echo=FALSE}
+cars <- mtcars[,c(1, 3, 4, 6, 9)] #Select the columns we want
+cars$am<-as.factor(cars$am) #Make the am column into factor
+```
+  
+  
+##Data Exploration
+
+  As we can see in figure 1, there appears to exit a linear relationship between `mpg` and the remaining variables.
+  
+##Models
+  
+###Simple model  
+  
+```{r, fig.width=10, echo=FALSE}   
+fit<-lm(mpg ~ am - 1, cars) #Plain means of automatic x manual
+x<-as.data.frame(c(0, 1))
+names(x)<-"am"
+x$am<-as.factor(x$am)
+y<-round(predict(fit, newdata = x, interval = c("confidence")), digits = 1)
+``` 
+  
+  As shown in figure 2, adopting a simple model considering only the transmission type, we can say, with 95% confidence, that cars with automatic transmissions have a fuel consumption between **`r y[1,2]`** and **`r y[1,3]` mpg**, with a mean of **`r y[1,1]` mpg**, while manual transmission cars have a fuel consumption between **`r y[2,2]`** and **`r y[2,3]` mpg**, with a mean of **`r y[2,1]` mpg**, i.e.:
+  
+>  We are 95% confident that cars with manual transmission are between **39.7%** and **45.6%** more economical than cars with automatic transmission, with a difference between **6.8 mpg** and **7.7 mpg** in economy.
+  
+###Multivariable Models
+  We will now attempt to analyse the influence of the other variables in the estimation of mpg.
+  Figure 3 analyses how a liner model with all variables adjusts to the data.
+  We can see that the `disp` variable has a high p value, meaning that it does not correlate well with our data, while the other two variables (`hp` and `wt`) present p values below 0.05 indicating a good correlation. We can also see that the coefficient for manual cars (am1) is higher than the coefficient for automatic cars (am0), meaning that manual cars will have higher mpg than automatic cars.
+  
+  Figure 4 analyses a model without the `disp` variable, which presents a nice fit, with low p values and high R2.
+  
+  Figure 5 shows a third model without the `wt` variable, keeping only the `hp` variable. This model presents the best p value of all with a R2 very close to the previous model.
+  
+  The result of the `anova` function comparing the 3 models shown in figure 7 present P values that indicate that the third model (f3) is the best, which is nice because it has only one regressor (the `hp` variable) which makes the analysis much easier.
+  
+  In figure 6 we plot the residuals diagnostics, which indicates a good fit for our model `f3`. Maybe we should consider the Maseratti Bora an outlier and leave it out from the model, but we chose to keep it.
+  
+###Conclusion with selected model
+
+As we can see in figure 8, our fitted model indicates that there is an almost constant variation of 5.3 mpg between cars with manual and automatic transmission, and that at 63 and 222 hp's our 95% confidence intervals overlap. So we can state that:
+  
+>  We are 95% confident that cars with manual transmission, with power between 63 and 222 HP's, are more economical than cars with automatic transmission. On average manual cars are **5.3 mpg** more economical than automatic ones. Fuel economy between manual and automatic cars varyies between **22.9%** and **39.3%** for cars from 63 to 222 hp's.
+   
+
+#Appendix
+  **Fig. 1: Pairs with red dots for manual and green dots for automatic**
+```{r, fig.width=10,}
+pairs(cars, col = 2 + (cars$am == 0))
+```
+
+  
+  **Fig. 2: Boxplot with 95% confidence intervals**
+  
+```{r, fig.width=10, echo=FALSE}
+boxplot(mpg ~ am, cars, ylab="mpg", xlab="0 - Automatic   1 - Manual")  
+abline(h = as.vector(y[1,c(2,3)]), col = "green", lty = 2)
+abline(h = as.vector(y[1,1]), col = "green", lty = 1)
+abline(h = as.vector(y[2,c(2, 3)]), col = "red", lty = 2)
+abline(h = as.vector(y[2,1]), col = "red", lty = 1)
+text(c(24.9), labels = "Mean for manual: 24.4 mpg", cex=0.5, col = "red")
+text(c(27.7), labels = "Upper limit for manual with 95% confidence: 27.2 mpg", cex=0.5, col = "red")
+text(c(22.1), labels = "Lower limit for manual with 95% confidence: 21.6 mpg", cex=0.5, col = "red")
+text(c(17.8), labels = "Mean for automatic: 17.1 mpg", cex=0.5, col = "green")
+text(c(19.9), labels = "Upper limit for automatic with 95% confidence: 19.4 mpg", cex=0.5, col = "green")
+text(c(15.4), labels = "Lower limit for automatic with 95% confidence: 14.9 mpg", cex=0.5, col = "green")
+```
+  
+  **Fig. 3: Linear model f1 with all variables**
+  
+```{r}
+f1<-lm(mpg ~ . - 1, cars)
+summary(f1)$coefficients
+summary(f1)$r.squared
+```
+
+  **Fig. 4: Linear model f2 without the `disp` variable**
+  
+```{r}
+f2<-lm(mpg ~ hp + wt + am - 1, cars)
+summary(f2)$coefficients
+summary(f2)$r.squared
+```
+  
+  **Fig. 5: Model f3 with only the hp variable**
+  
+```{r}
+f3<-lm(mpg ~ hp + am - 1, cars)
+summary(f3)$coefficients
+summary(f3)$r.squared
+```
+  
+  **Fig. 6: Residuals for the selected model**
+  
+```{r,echo=FALSE, fig.width=10, fig.height=5}
+par(mfrow = c(2,2))
+plot(f3)
+```
+  
+  **Fig. 7: Anova function results for the models**
+  
+```{r}
+anova(f1, f2, f3)
+```
+  
+  **Fig. 8: Mpg x hp plot for manual (red) and automatic (green) cars with 95% confidence interval**
+  
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+auto<-cars[cars$am == 0,c(1:4)]
+man<-cars[cars$am == 1,c(1:4)]
+fauto <- lm(mpg ~ hp, auto)
+fman <- lm(mpg ~ hp, man)
+par(mfrow = c(1,1))
+plot(auto$hp, auto$mpg, xlim=c(50, 350), ylim=c(0, 35), col = "green", xlab="hp", ylab="mpg", pch=19)
+points(man$hp, man$mpg, col="red", pch=19)
+abline(fauto, col="green")
+abline(fman, col="red")
+x<-c(50:350)
+x<-as.data.frame(x)
+names(x)<-"hp"
+yauto<-as.data.frame(predict(fauto, newdata = x, interval=c("confidence")))
+points(x$hp, yauto$upr, type="l", col="green", lty=2)
+points(x$hp, yauto$lwr, type="l", col="green", lty=2)
+yman<-as.data.frame(predict(fman, newdata = x, interval=c("confidence")))
+points(x$hp, yman$upr, type="l", col="red", lty=2)
+points(x$hp, yman$lwr, type="l", col="red", lty=2)
+abline(v = c(63, 142, 222), lty=2)
+```
+
